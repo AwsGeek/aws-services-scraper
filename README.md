@@ -8,7 +8,7 @@ cd scrape
 pip install -r requirements.txt -t .
 cd ..
 
-cd publish
+cd shared
 pip install -r requirements.txt -t .
 cd ..
 
