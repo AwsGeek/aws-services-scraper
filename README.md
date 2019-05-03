@@ -13,7 +13,7 @@ pip install -r requirements.txt -t .
 cd ..
 
 cd ..
-./build.sh <region> lambda-bucket> <stack-name> <bucket> <key> (see NOTE below)
+./build.sh <region> lambda-bucket> <stack-name> (see NOTE below)
 ```
 
 WHERE:
