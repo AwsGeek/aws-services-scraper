@@ -1,8 +1,13 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 
+Outputs:
+  ServicesTopicArn:
+    Value: !Ref ServicesTopic
+    Export:
+      Name: ServicesTopicArn
+      
 Resources:
-
 
   ServicesBucket:
     Type: AWS::S3::Bucket
