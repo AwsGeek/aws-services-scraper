@@ -1,5 +1,5 @@
 # AWS Services Scraper
-Scrape AWS service information from the [AWS products page](https://aws.amazon.com/products/), upload JSON formatted information to an S3 bucket, and notify subscribers of the new JSON file via an SNS message. 
+Periodically (daily) scrape AWS service information from the [AWS products page](https://aws.amazon.com/products/), upload JSON formatted information to an S3 bucket, and notify subscribers of the new JSON file via an SNS message. 
 
 
 TO BUILD:
