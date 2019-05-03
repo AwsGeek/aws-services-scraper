@@ -17,7 +17,6 @@ cd shared
 pip install -r requirements.txt -t .
 cd ..
 
-cd ..
 ./build.sh <region> lambda-bucket> <stack-name> (see NOTE below)
 ```
 
