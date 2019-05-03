@@ -1,0 +1,143 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+
+  ServicesTopic:
+    Type: AWS::SNS::Topic
+    Properties: 
+      TopicName: AWSServicesUpdate
+  
+  ServicesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+      NotificationConfiguration:
+        LambdaConfigurations:
+          -
+            Function: !GetAtt [ServicesPublisher, Arn]
+            Event: "s3:ObjectCreated:Put"
+    DeletionPolicy: Retain
+
+  ServicesScraperRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      Policies:
+        -
+          PolicyName: ServicesScraperPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: Allow
+                Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              -
+                Effect: Allow
+                Action:
+                   - s3:PutObject
+                   - s3:PutObjectAcl
+                Resource: !Sub "${ServicesBucket.Arn}/*"
+
+  ServicesScraper:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: function.lambda_handler
+      Runtime: python2.7
+      CodeUri: ./scrape
+      Timeout: 60
+      Role: !GetAtt ServicesScraperRole.Arn
+      Environment:
+        Variables:
+          bucket: !Ref ServicesBucket
+          topic: !Ref ServicesTopic
+
+  ServicesScraperSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: ScheduledRule
+      ScheduleExpression: rate(1 day)
+      State: ENABLED
+      Targets:
+        -
+          Arn: !GetAtt ServicesScraper.Arn
+          Id: TargetFunctionV1
+
+  ServicesScraperInvokePermissions:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ServicesScraper
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ServicesScraperSchedule.Arn
+
+
+  ServicesPublisherRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      Policies:
+        -
+          PolicyName: ServicesPublisherPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: Allow
+                Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              -
+                Effect: Allow
+                Action: sns:Publish
+                Resource: !Ref ServicesTopic
+                
+  ServicesPublisher:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: function.lambda_handler
+      Runtime: python2.7
+      CodeUri: ./publish
+      Timeout: 5
+      Role: !GetAtt [ServicesPublisherRole, Arn]
+      Environment:
+        Variables:
+          topic: !Ref ServicesTopic
+
+  ServicesPublisherInvokePermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt [ServicesPublisher, Arn]
+      Action: 'lambda:InvokeFunction'
+      Principal: s3.amazonaws.com
+      SourceAccount: !Ref 'AWS::AccountId'
+      SourceArn: !GetAtt [ServicesBucket, Arn]
