@@ -3,11 +3,7 @@ Transform: AWS::Serverless-2016-10-31
 
 Resources:
 
-  ServicesTopic:
-    Type: AWS::SNS::Topic
-    Properties: 
-      TopicName: AWSServicesUpdate
-  
+
   ServicesBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -21,6 +17,15 @@ Resources:
             Function: !GetAtt [ServicesPublisher, Arn]
             Event: "s3:ObjectCreated:Put"
     DeletionPolicy: Retain
+
+  SharedDependenciesLayer:
+      Type: AWS::Serverless::LayerVersion
+      Properties:
+          LayerName: aws-services-scraper-shared-dependencies
+          ContentUri: shared/
+          CompatibleRuntimes:
+            - python2.7
+          RetentionPolicy: Retain
 
   ServicesScraperRole:
     Type: AWS::IAM::Role
@@ -62,6 +67,8 @@ Resources:
       Handler: function.lambda_handler
       Runtime: python2.7
       CodeUri: ./scrape
+      Layers:
+        - !Ref SharedDependenciesLayer
       Timeout: 60
       Role: !GetAtt ServicesScraperRole.Arn
       Environment:
@@ -88,6 +95,11 @@ Resources:
       Principal: events.amazonaws.com
       SourceArn: !GetAtt ServicesScraperSchedule.Arn
 
+  ServicesTopic:
+    Type: AWS::SNS::Topic
+    Properties: 
+      TopicName: AWSServicesUpdate
+  
 
   ServicesPublisherRole:
     Type: AWS::IAM::Role
@@ -127,6 +139,8 @@ Resources:
       Handler: function.lambda_handler
       Runtime: python2.7
       CodeUri: ./publish
+      Layers:
+        - !Ref SharedDependenciesLayer
       Timeout: 5
       Role: !GetAtt [ServicesPublisherRole, Arn]
       Environment:
