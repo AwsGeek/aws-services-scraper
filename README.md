@@ -29,3 +29,19 @@ WHERE:
 ```
 
 NOTE: Because of circular dependencies between the S3 bucket, IAM permissions, and the Lambda function, the stack needs to be built in 2 steps. In step 1, remove the S3 bucket trigger from the bucket definition in template.yaml and build. In step 2, replace the S3 bucket trigger and rebuild.
+
+```
+  ServicesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+      NotificationConfiguration:                              |
+        LambdaConfigurations:                                 |
+          -                                                   |  <-- Remove, build, replace, build again
+            Function: !GetAtt [ServicesPublisher, Arn]        |
+            Event: "s3:ObjectCreated:Put"                     |
+    DeletionPolicy: Retain
+```
