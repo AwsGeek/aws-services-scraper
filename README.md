@@ -13,7 +13,7 @@ pip install -r requirements.txt -t .
 cd ..
 
 cd ..
-./build.sh <region> lambda-bucket> <stack-name> <bucket> <key>
+./build.sh <region> lambda-bucket> <stack-name> <bucket> <key> (see NOTE below)
 ```
 
 WHERE:
@@ -22,3 +22,5 @@ WHERE:
   lambda-bucket - is used by cloudformation as a staging area for the lambda function
   stack-name - is the name you'd like to use for the cloudformation stack
 ```
+
+NOTE: Because of circular dependencies between the S3 bucket, IAM permissions, and the Lambda function, the stack needs to be built in 2 steps. In step 1, remove the S3 bucket trigger from the bucket definition in template.yaml and build. In step 2, replace the S3 bucket trigger and rebuild.
